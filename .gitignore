@@ -1,0 +1,39 @@
+# 虚拟环境
+myenv/
+
+# 环境变量文件
+.env
++.env.sample  # 示例文件应该被提交
+
+# IDE相关
+.idea/
+.vscode/
+.history/
+
+# 缓存文件
+__pycache__/
+*.py[cod]
+temp
+# 日志文件
+*.log
+
+# 本地数据库
+*.db
+*.sqlite3
+
+# 测试覆盖率
+.coverage
+htmlcov/
+
+# 打包文件
+dist/
+build/
+*.egg-info/
+
+# 临时文件
+*.swp
+*.swo
+*~ 
+
+test*.*
+project_structure
