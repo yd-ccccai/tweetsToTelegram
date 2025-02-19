@@ -5,7 +5,7 @@ A Python-based Twitter content monitoring and Telegram push service that support
 ## 🌟 Key Features
 
 - 📩 Real-time monitoring of specified Twitter users' latest tweets
-- 🤖 Intelligent content summarization using Azure OpenAI GPT-4
+- 🤖 Intelligent content summarization with multiple AI providers (Azure OpenAI, OpenAI, etc.)
 - ⏰ Flexible scheduled task management system
 - 📊 Automated data storage and task logging
 - 🛡️ Built-in anti-crawling protection mechanism
@@ -40,11 +40,19 @@ cp .env.sample .env
 # Telegram Bot Configuration
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 
-# Azure OpenAI Configuration
+# AI Provider Selection
+AI_PROVIDER=azure  # Options: azure (Azure OpenAI) or openai (OpenAI)
+
+# For Azure OpenAI Configuration:
 AZURE_OPENAI_KEY=your_azure_key_here
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2023-05-15
 AZURE_DEPLOYMENT=gpt-4o
+
+# For OpenAI Configuration:
+AI_API_KEY=your_openai_key_here
+AI_MODEL=gpt-4  # Model name to use
+AI_BASE_URL=https://api.openai.com/v1  # Optional, for proxy or compatible services
 ```
 
 5. Start the service
@@ -95,7 +103,9 @@ Use the `/schedule` command to set up scheduled tasks, follow the prompts to inp
 3. Follow prompts to set bot name
 4. Get and save the API Token
 
-### Azure OpenAI Configuration
+### AI Service Configuration
+
+#### Azure OpenAI Configuration
 
 1. Visit [Azure Portal](https://portal.azure.com)
 2. Create Azure OpenAI service
@@ -104,6 +114,15 @@ Use the `/schedule` command to set up scheduled tasks, follow the prompts to inp
    - Endpoint URL
    - API version
    - Deployment name
+
+#### OpenAI Configuration
+
+1. Visit [OpenAI Platform](https://platform.openai.com)
+2. Create API key
+3. Configure necessary information:
+   - API key
+   - Model name (e.g., gpt-4)
+   - Base URL (optional, for proxy or compatible services)
 
 ## 📁 Project Structure
 

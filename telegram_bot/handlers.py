@@ -1,4 +1,4 @@
-from telegram import Update, ReplyKeyboardMarkup
+from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     CommandHandler,
     MessageHandler,
@@ -6,6 +6,7 @@ from telegram.ext import (
     ConversationHandler,
     ContextTypes
 )
+import re
 from telegram_bot.scheduler import TaskScheduler
 
 # 定义对话状态
@@ -35,9 +36,15 @@ async def get_tweets(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
     
     username = args[0]
-    count = int(args[1])
+    try:
+        count = int(args[1])
+        if count > 20:
+            await update.message.reply_text("ℹ️ 温馨提示：由于API限制，最多获取21条推文")
+    except ValueError:
+        await update.message.reply_text("数量必须是一个有效的数字")
+        return
     
-    await update.message.reply_text(f"正在获取 @{username} 的最新 {count} 条推文...")
+    await update.message.reply_text(f"正在获取 @{username} 的最新推文...")
     
     try:
         # 获取推文
@@ -153,3 +160,80 @@ async def list_tasks(update: Update, context: ContextTypes.DEFAULT_TYPE):
         message += "-------------------\n"
     
     await update.message.reply_text(message) 
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """处理接收到的消息"""
+    try:
+        message = update.message.text
+        chat_id = update.message.chat_id
+        
+        # 处理消息逻辑...
+        
+        # 如果消息包含导航标记，添加导航按钮
+        if '[NAV:' in message:
+            nav_info = re.search(r'\[NAV:(\d+):(\d+)\]', message)
+            if nav_info:
+                current_page = int(nav_info.group(1))
+                total_pages = int(nav_info.group(2))
+                
+                # 创建导航按钮
+                keyboard = []
+                if current_page > 1:
+                    keyboard.append(InlineKeyboardButton('⬅️ 上一页', callback_data=f'nav:{current_page-1}:{total_pages}'))
+                if current_page < total_pages:
+                    keyboard.append(InlineKeyboardButton('下一页 ➡️', callback_data=f'nav:{current_page+1}:{total_pages}'))
+                
+                if keyboard:
+                    reply_markup = InlineKeyboardMarkup([keyboard])
+                    # 移除导航标记后发送消息
+                    clean_message = re.sub(r'\[NAV:\d+:\d+\]', '', message)
+                    await context.bot.send_message(
+                        chat_id=chat_id,
+                        text=clean_message,
+                        parse_mode='Markdown',
+                        reply_markup=reply_markup
+                    )
+                    return
+        
+        # 如果没有导航标记，正常发送消息
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=message,
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        print(f"Error in handle_message: {str(e)}")
+        await update.message.reply_text(f"处理消息时出错：{str(e)}")
+
+async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """处理按钮回调"""
+    try:
+        query = update.callback_query
+        if query.data.startswith('nav:'):
+            _, page, total = query.data.split(':')
+            page = int(page)
+            total = int(total)
+            
+            # 这里需要实现获取对应页面内容的逻辑
+            # 可以将内容存储在context.user_data中
+            
+            # 创建新的导航按钮
+            keyboard = []
+            if page > 1:
+                keyboard.append(InlineKeyboardButton('⬅️ 上一页', callback_data=f'nav:{page-1}:{total}'))
+            if page < total:
+                keyboard.append(InlineKeyboardButton('下一页 ➡️', callback_data=f'nav:{page+1}:{total}'))
+            
+            reply_markup = InlineKeyboardMarkup([keyboard]) if keyboard else None
+            
+            # 更新消息
+            await query.answer()
+            await query.edit_message_text(
+                text=f"第{page}页的内容\n\n[等待实现获取内容的逻辑]\n\n📄 第{page}页/共{total}页",
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+    except Exception as e:
+        print(f"Error in handle_callback: {str(e)}")
+        await query.answer(f"处理回调时出错：{str(e)}")

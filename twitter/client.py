@@ -69,6 +69,29 @@ class TwitterClient:
         except Exception as e:
             self.debug_print(f"❌ 保存HTML时出错: {str(e)}")
 
+    def clean_tweet_text(self, text: str) -> str:
+        """清理推文文本，移除用户名和时间信息，但保留置顶标识"""
+        # 检查并保留置顶标识（支持emoji和英文两种形式）
+        is_pinned = '📌' in text or 'Pinned' in text
+        
+        # 如果是英文Pinned标识，替换为emoji
+        text = text.replace('Pinned', '📌')
+        
+        # 移除包含 @ 的用户名信息
+        text = ' '.join([word for word in text.split() if not word.startswith('@')])
+        
+        # 移除日期信息（通常在推文末尾，格式如 Jan 28）
+        text = ' '.join([word for word in text.split() if not any(month in word for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'])])
+        
+        # 移除其他常见的时间格式（如 5h, 2d 等）
+        text = ' '.join([word for word in text.split() if not (word.endswith(('h', 'd', 'm')) and word[:-1].isdigit())])
+        
+        # 如果原文包含置顶标识，确保保留
+        if is_pinned and not text.startswith('📌'):
+            text = '📌 ' + text
+        
+        return text.strip()
+
     def debug_print(self, message):
         """调试信息打印"""
         if self.debug:
@@ -232,13 +255,18 @@ class TwitterClient:
                                 
                             # 获取推文内容
                             tweet_content = None
-                            content_candidates = item.find_all(['div', 'p'], class_=lambda x: x and any(term in str(x).lower() for term in ['content', 'text', 'body']))
+                            # 首先尝试精确匹配新发现的类名
+                            tweet_content = item.find('div', class_='tweet-content media-body')
                             
-                            for candidate in content_candidates:
-                                if candidate.get_text().strip():
-                                    tweet_content = candidate
-                                    break
-                                    
+                            # 如果精确匹配失败，尝试现有的模糊匹配方案
+                            if not tweet_content or not tweet_content.get_text().strip():
+                                content_candidates = item.find_all(['div', 'p'], class_=lambda x: x and any(term in str(x).lower() for term in ['content', 'text', 'body']))
+                                
+                                for candidate in content_candidates:
+                                    if candidate.get_text().strip():
+                                        tweet_content = candidate
+                                        break
+                                        
                             if not tweet_content:
                                 self.debug_print("跳过一条无内容的推文")
                                 continue
@@ -248,6 +276,9 @@ class TwitterClient:
                                 self.debug_print("跳过一条空内容的推文")
                                 continue
                                 
+                            # 清理推文文本
+                            content_text = self.clean_tweet_text(content_text)
+                            
                             # 获取时间
                             time_element = item.find(['span', 'a'], class_=lambda x: x and any(term in str(x).lower() for term in ['date', 'time']))
                             tweet_time = "Unknown time"
@@ -269,10 +300,21 @@ class TwitterClient:
                                     if match:
                                         stats['likes'] = match.group()
                             
+                            # 获取推文ID
+                            tweet_id = None
+                            tweet_link = item.find('a', class_=lambda x: x and any(term in str(x).lower() for term in ['link', 'tweet-link', 'tweet-date']))
+                            if tweet_link and 'href' in tweet_link.attrs:
+                                href = tweet_link['href']
+                                id_match = re.search(r'/status/(\d+)', href)
+                                if id_match:
+                                    tweet_id = id_match.group(1)
+                            
                             tweet = {
                                 "text": content_text,
                                 "time": tweet_time,
-                                "stats": stats
+                                "stats": stats,
+                                "url": f"https://x.com/{username}/status/{tweet_id}" if tweet_id else None,
+                                "order": len(tweets) + 1  # 添加顺序标记
                             }
                             tweets.append(tweet)
                             self.debug_print(f"已处理第 {len(tweets)} 条推文，发布时间: {tweet_time}")
@@ -321,4 +363,4 @@ class TwitterClient:
             return response.text
         except Exception as e:
             self.debug_print(f"请求失败: {e}")
-            return None 
+            return None

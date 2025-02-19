@@ -5,7 +5,7 @@
 ## 🌟 主要功能
 
 - 📩 实时监控指定Twitter用户的最新推文
-- 🤖 使用Azure OpenAI GPT-4进行智能内容总结
+- 🤖 支持多种AI服务提供商（Azure OpenAI、OpenAI等）进行智能内容总结
 - ⏰ 灵活的定时任务管理系统
 - 📊 自动化的数据存储和任务记录
 - 🛡️ 内置反爬虫保护机制
@@ -40,11 +40,19 @@ cp .env.sample .env
 # Telegram Bot配置
 TELEGRAM_TOKEN=your_telegram_bot_token_here
 
-# Azure OpenAI配置
+# AI服务提供商选择
+AI_PROVIDER=azure  # 可选：azure（Azure OpenAI）或 openai（OpenAI）
+
+# 如果使用Azure OpenAI，配置以下内容：
 AZURE_OPENAI_KEY=your_azure_key_here
 AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
 AZURE_OPENAI_API_VERSION=2023-05-15
 AZURE_DEPLOYMENT=gpt-4o
+
+# 如果使用OpenAI，配置以下内容：
+AI_API_KEY=your_openai_key_here
+AI_MODEL=gpt-4  # 使用的模型名称
+AI_BASE_URL=https://api.openai.com/v1  # 可选，如果使用代理或其他兼容服务
 ```
 
 5. 启动服务
@@ -95,7 +103,9 @@ docker logs -f tweetstobot
 3. 按提示设置机器人名称
 4. 获取并保存API Token
 
-### Azure OpenAI配置
+### AI服务配置
+
+#### Azure OpenAI配置
 
 1. 访问 [Azure门户](https://portal.azure.com)
 2. 创建Azure OpenAI服务
@@ -104,6 +114,15 @@ docker logs -f tweetstobot
    - 终结点URL
    - API版本
    - 部署名称
+
+#### OpenAI配置
+
+1. 访问 [OpenAI平台](https://platform.openai.com)
+2. 创建API密钥
+3. 配置必要信息：
+   - API密钥
+   - 模型名称（如：gpt-4）
+   - 基础URL（可选，用于代理或其他兼容服务）
 
 ## 📁 项目结构
 
